@@ -33,6 +33,9 @@ default_settings = {
 			"connection": 2,
 			"communication": 5
 		},
+		"delay": {
+			"sendAfterOk": 0.01
+		},
 		"additionalPorts": []
 	},
 	"server": {

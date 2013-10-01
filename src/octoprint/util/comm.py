@@ -515,6 +515,7 @@ class MachineCom(object):
 
 		#Start monitoring the serial port.
 		timeout = getNewTimeout("communication")
+		sendDelayAfterOk = settings().getFloat(["serial", "delay", "sendAfterOk"])
 		tempRequestTimeout = timeout
 		sdStatusRequestTimeout = timeout
 		startSeen = not settings().getBoolean(["feature", "waitForStartOnConnect"])
@@ -545,6 +546,9 @@ class MachineCom(object):
 							or 'Missing checksum' in line:
 						pass
 					elif not self.isError():
+						# Turn off motors, heaters and fan
+						for command in ["M84", "M104 S0", "M140 S0", "M106 S0"]:
+							self._sendCommand(command)
 						self._errorValue = line[6:]
 						self._changeState(self.STATE_ERROR)
 						eventManager().fire("Error", self.getErrorString())
@@ -731,6 +735,8 @@ class MachineCom(object):
 					elif line.lower().startswith("resend") or line.lower().startswith("rs"):
 						if settings().get(["feature", "swallowOkAfterResend"]):
 							swallowOk = True
+						if sendDelayAfterOk:
+							time.sleep(sendDelayAfterOk)
 						self._handleResendRequest(line)
 
 				### Printing
@@ -759,6 +765,8 @@ class MachineCom(object):
 						if "ok" in line and swallowOk:
 							swallowOk = False
 						elif "ok" in line:
+							if sendDelayAfterOk:
+								time.sleep(sendDelayAfterOk)
 							timeout = getNewTimeout("communication")
 							if self._resendDelta is not None:
 								self._resendNextCommand()
@@ -769,6 +777,8 @@ class MachineCom(object):
 						elif line.lower().startswith("resend") or line.lower().startswith("rs"):
 							if settings().get(["feature", "swallowOkAfterResend"]):
 								swallowOk = True
+							if sendDelayAfterOk:
+								time.sleep(sendDelayAfterOk)
 							self._handleResendRequest(line)
 			except:
 				self._logger.exception("Something crashed inside the serial connection loop, please report this in OctoPrint's bug tracker:")
